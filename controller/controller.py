@@ -11,6 +11,9 @@ from functools import partial
 
 logger = logging.getLogger(__name__)
 
+PORT = 12345
+HOST = 'jetbot-vhost'
+
 R1 = 24
 R2 = 26
 L1 = 19
@@ -112,8 +115,6 @@ def network_loop(queue, socket):
     while True:
         queue.put(socket.recv())
 
-PORT = 12345
-HOST = '192.168.178.39'
 
 def main():
     parser = argparse.ArgumentParser()
@@ -150,11 +151,11 @@ def main():
                 spin_left=spin_left,
                 spin_right=spin_right,
                 stop=stop,
+                reverse=reverse,
                 quit=quit,
                 ).get(message.split()[0])
             if action:
                 args = [int(v) for v in message.split()[1:]]
-                print action, args
                 action(*args)
             else:
                 print "unknown message:", message
