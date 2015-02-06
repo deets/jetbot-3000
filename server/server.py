@@ -21,6 +21,7 @@ QUEUE = Queue.Queue()
 def index():
     return template('index')
 
+
 @route('/static/<filename:path>')
 def send_static(filename):
     return static_file(
@@ -31,30 +32,20 @@ def send_static(filename):
             )
         )
 
+
 @route('/track', method="POST")
 def track():
     data = request.json
     command = data.get("command")
-    if command == "track":
-        x = data["x"]
-        y = data["y"]
-        length = min(1.0, sqrt(x**2 + y**2))
-
-        angle = atan2(y, x) / pi * 180.0 + 90.0
-        direction = "left" if angle < 0 else "right"
-        speed = int(length * 100)
-
-        if length <= SPEED_THRESHOLD:
-            QUEUE.put("stop")
-        else:
-            if abs(angle) < 45:
-                QUEUE.put("forward %i" % speed)
-            elif 45 <= abs(angle) < 90:
-                QUEUE.put("spin_%s %i" % (direction, speed))
-            elif 120 <= abs(angle) < 180:
-                QUEUE.put("reverse %i" % speed)
-    else:
-        QUEUE.put("stop")
+    if command is not None:
+        command = dict(up="forward 100",
+                 left="spin_left 100",
+                 right="spin_right 100",
+                 down="reverse 100").get(command, command)
+        print "command:", command
+        QUEUE.put(
+            command
+            )
 
 
 def sender(socket):
@@ -62,10 +53,10 @@ def sender(socket):
         try:
             command = QUEUE.get(True, TIMEOUT)
         except Queue.Empty:
-            socket.send("stop")
-        else:
-            print "command:", command
-            socket.send(command)
+            command = "stop"
+        print command
+        socket.send(command)
+
 
 def main():
     global SOCKET

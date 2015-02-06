@@ -10,8 +10,10 @@
   </head>
   
   <body>
-    
-    <img draggable="false" class="crosshair" src="/static/crosshair.svg" width="200" height="200"/>
+    <div class="arrow left">&#x2190;</div>
+    <div class="arrow up">&#x2191;</div>
+    <div class="arrow down">&#x2193;</div>
+    <div class="arrow right">&#x2192;</div>
     <script>
       $(document).ready(function() {
         app();

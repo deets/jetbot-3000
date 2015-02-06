@@ -1,80 +1,92 @@
+String.prototype.endsWith = function(suffix) {
+    return this.indexOf(suffix, this.length - suffix.length) !== -1;
+};
+
+String.prototype.startsWith = function(prefix) {
+    return this.indexOf(prefix) == 0;
+};
+
+
 function app() {
-    var tracking = false;
-    var last_event = null;
+    function bindInputs() {
+	var keydown = $(document).asEventStream('keydown').map('.keyCode');
+	var keyup = $(document).asEventStream('keyup').map('.keyCode');
 
-    function send_data() {
-	var data = last_event || {};
+	var left   = keydown.filter(function(x) { return x === 37; }).map("left");
+	var right  = keydown.filter(function(x) { return x === 39; }).map("right");
+	var up   = keydown.filter(function(x) { return x === 38; }).map("up");
+	var down  = keydown.filter(function(x) { return x === 40; }).map("down");
+
+	var left_stop   = keyup.filter(function(x) { return x === 37; }).map("left_stop");
+	var right_stop  = keyup.filter(function(x) { return x === 39; }).map("right_stop");
+	var up_stop   = keyup.filter(function(x) { return x === 38; }).map("up_stop");
+	var down_stop  = keyup.filter(function(x) { return x === 40; }).map("down_stop");
+
+	var vc = Bacon.fromEventTarget(document, "visibilitychange").map(
+	function(event) {
+	    return event.target.visibilityState;
+	});
+
+	return {
+	    left: left,
+	    right: right,
+	    down: down,
+	    up: up,
+	    left_stop: left_stop,
+	    right_stop: right_stop,
+	    up_stop: up_stop,
+	    down_stop: down_stop,
+	    vc: vc
+	    };
+    }
+
+    var inputs = bindInputs();
+    var stop = Bacon.constant("stop");
+
+    function const_(v) {
+	function f() {
+	    return v;
+	}
+	return f;
+    }
+    var stop = const_("stop");
+
+    var drivecommands = Bacon.mergeAll(
+	$.map(
+	    inputs,
+	    function(stream) { return stream; }
+	)
+    );
+    var sm = drivecommands.withStateMachine(
+	"stop",
+	function(direction, event) {
+	    event = event.value();
+	    if(event.endsWith("stop")) {
+		if(event.startsWith(direction)) {
+		    return ["stop", [new Bacon.Next("stop")]];
+		} else {
+		    return [direction, [new Bacon.Next(direction)]];
+		}
+	    } else if(event == "hidden" || event == "visible") {
+		return ["stop", [new Bacon.Next("stop")]];
+	    }
+	    return [event, [new Bacon.Next(event)]];
+	});
+
+    var tick   = Bacon.interval(100).map("tick");
+    sm.log("statemachine: ");
+    sm.onValue(function(event) {
+	var data = { "command" : event };
 	$.ajax({
 	    url: '/track',
 	    type: 'POST',
 	    data: JSON.stringify(data),
 	    contentType: 'application/json; charset=utf-8',
 	    dataType: 'json'
-	});
-    }
-
-    function start_tracking() {
-	tracking = true;
-    }
-
-    function stop_tracking() {
-	tracking = false;
-	last_event = null;
-	var data = { "command" : "stop" };
-	$.ajax({
-	    url: '/track',
-	    type: 'POST',
-	    data: JSON.stringify(data),
-	    contentType: 'application/json; charset=utf-8',
-	    dataType: 'json'
-	});
-    }
-
-    function track_coords(event) {
-	if(!tracking) {
-	    return;
-	}
-	var offsets = $(event.target).offset();
-	var width = $(event.target).width();
-	var height = $(event.target).height();
-	var x = ((event.pageX - offsets.left) - width / 2.0) / (width / 2.0);
-	var y = ((event.pageY - offsets.top) - height / 2.0) / (height / 2.0);
-	last_event = { "command" : "track", "x" : x, "y" : y };
-	send_data();
-    };
-
-    $(".crosshair").mousedown(function(event) { 
-	start_tracking(event); track_coords(event);
-    }).mousemove(track_coords).mouseup(stop_tracking).mouseout(stop_tracking);
-
-    function resend_data() {
-	setTimeout(resend_data, 50);
-	if(tracking) {
-	    send_data();
-	}
-    }
-    setTimeout(resend_data, 50);
-
-    $(document).keydown(function(event) {
-	switch(event.keyCode) {
-	case 38: // up
-	    last_event = { "x" : 0.0, "y" : -1.0, "command" : "track"};
-	    tracking = true;
-	    break;
-	case 39: // right
-	    last_event = {"x" : 1.0, "y" : .0, "command" : "track"};
-	    tracking = true;
-	    break;
-	case 37: // left
-	    last_event = {"x" : -1.0, "y" : .0, "command" : "track"};
-	    tracking = true;
-	    break;
-	case 40: // down
-	    last_event = {"x" : 0.0, "y" : 1.0, "command" : "track"};
-	    tracking = true;
-	    break;
-	}
+	}); });
+    sm.onValue(function(event) {
+	$(".arrow").removeClass("active");
+	var sel = ".arrow." + event;
+	$(sel).addClass("active");
     });
-    $(document).keyup(stop_tracking);
-
 }
