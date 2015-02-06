@@ -1,5 +1,4 @@
 
-from .protocol import (
-    pi_protocol_test,
+from .host import (
     protocol_test,
 )

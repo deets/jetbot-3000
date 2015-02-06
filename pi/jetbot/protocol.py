@@ -11,9 +11,6 @@ import Queue
 
 import zmq
 
-PORT = 12345
-HOST = 'jetbot-vhost'
-
 logger = logging.getLogger(__name__)
 
 
@@ -121,89 +118,3 @@ class TimeSync(object):
             logger.warn("Message already discarded for SYNC_ACK %r", msg)
             return
         sync_msg.ack(msg)
-
-
-def setup_logging(_opts):
-    logging.basicConfig(
-        level=logging.DEBUG,
-        stream=sys.stderr,
-    )
-
-def send_message(socket, message):
-    payload = message.__json__()
-    socket.send(json.dumps(payload))
-
-
-
-def receive_message(socket, processors, send):
-    while True:
-        packet = socket.recv()
-        now = time.time()
-        message = json.loads(packet)
-        message["received"] = now
-        logger.debug(json.dumps(message))
-        for processor in processors:
-            processor.process(message, send)
-
-
-def pi_protocol_test():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default=HOST)
-    parser.add_argument("--port", type=int, default=PORT)
-    opts = parser.parse_args()
-
-    setup_logging(opts)
-
-    uri = "tcp://{host}:{port}".format(host=opts.host, port=opts.port)
-
-    context = zmq.Context()
-    socket = context.socket(zmq.PAIR)
-    socket.connect(uri)
-    time_sync = TimeSync()
-
-    logger.info("Connecting to '%s'", uri)
-
-    send = partial(send_message, socket)
-
-    while True:
-        packet = socket.recv()
-        now = time.time()
-        message = json.loads(packet)
-        message["received"] = now
-        logger.debug(json.dumps(message))
-        time_sync.process(message, send)
-
-
-def protocol_test():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=PORT)
-    opts = parser.parse_args()
-    setup_logging(opts)
-    uri = "tcp://*:{port}".format(port=opts.port)
-
-    context = zmq.Context()
-    socket = context.socket(zmq.PAIR)
-
-    socket.bind(uri)
-    logger.info("Binding to '%s'", uri)
-
-    time_sync = TimeSync()
-
-    send_queue = Queue.Queue()
-    receiver_thread = threading.Thread(
-        target=partial(
-            receive_message,
-            socket,
-            [time_sync],
-            send_queue.put,
-            ),
-        )
-    receiver_thread.setDaemon(True)
-    receiver_thread.start()
-
-    send = partial(send_message, socket)
-    while True:
-        time.sleep(.5)
-        for _ in xrange(send_queue.qsize()):
-            send(send_queue.get())
-        time_sync.activate(send)
