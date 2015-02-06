@@ -6,7 +6,7 @@ import time
 import json
 import Queue
 import threading
-import zmq
+import nanomsg
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +84,7 @@ class ServerHub(Hub):
     def setup(cls, opts):
         uri = "tcp://*:{port}".format(port=opts.port)
 
-        context = zmq.Context()
-        socket = context.socket(zmq.PAIR)
+        socket = nanomsg.Socket(nanomsg.PAIR)
 
         socket.bind(uri)
         logger.info("Binding to '%s'", uri)
@@ -104,8 +103,8 @@ class PiHub(Hub):
     @classmethod
     def setup(cls, opts):
         uri = "tcp://{host}:{port}".format(host=opts.host, port=opts.port)
-        context = zmq.Context()
-        socket = context.socket(zmq.PAIR)
+        socket = nanomsg.Socket(nanomsg.PAIR)
+
         logger.info("Connecting to '%s'", uri)
         socket.connect(uri)
         return cls(socket)

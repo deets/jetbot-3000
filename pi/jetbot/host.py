@@ -20,5 +20,4 @@ def protocol_test():
     hub += TimeSync()
 
     while True:
-        time.sleep(.5)
         hub.process_once()
