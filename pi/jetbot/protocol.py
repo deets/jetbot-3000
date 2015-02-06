@@ -27,7 +27,6 @@ class Message(object):
           "You must subclass Message and define TYPE: %s" % \
           self.__class__.__name__
         return {
-            'timestamp': time.time(),
             'type': self.TYPE,
             'uid': self.uid,
             }

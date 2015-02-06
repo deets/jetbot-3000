@@ -41,6 +41,7 @@ class Hub(object):
 
     def _send(self, message):
         payload = message.__json__()
+        payload["timestamp"] = time.time()
         self._socket.send(json.dumps(payload))
 
 
