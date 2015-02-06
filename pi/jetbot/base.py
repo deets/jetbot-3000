@@ -89,3 +89,22 @@ class ServerHub(Hub):
         socket.bind(uri)
         logger.info("Binding to '%s'", uri)
         return cls(socket)
+
+
+class PiHub(Hub):
+
+    @classmethod
+    def setup_argparser(cls, parser):
+        super(PiHub, cls).setup_argparser(parser)
+        parser.add_argument("--port", type=int, default=PORT)
+        parser.add_argument("--host", default=HOST)
+
+
+    @classmethod
+    def setup(cls, opts):
+        uri = "tcp://{host}:{port}".format(host=opts.host, port=opts.port)
+        context = zmq.Context()
+        socket = context.socket(zmq.PAIR)
+        logger.info("Connecting to '%s'", uri)
+        socket.connect(uri)
+        return cls(socket)
