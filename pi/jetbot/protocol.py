@@ -18,8 +18,12 @@ class Message(object):
 
     TYPE = None
 
-    def __init__(self):
+    TIMESTAMP = "timestamp" # When this message send
+    RECEIVED = "received" # When this message was received at the sender
+
+    def __init__(self, clock=time.time):
         self.uid = str(uuid.uuid4())
+        self._clock = clock
 
 
     def __json__(self):
@@ -29,14 +33,15 @@ class Message(object):
         return {
             'type': self.TYPE,
             'uid': self.uid,
+            self.TIMESTAMP: self._clock()
             }
 
 class SyncMessage(Message):
 
     TYPE = "TIME_SYNC"
 
-    def __init__(self):
-        super(SyncMessage, self).__init__()
+    def __init__(self, *a, **k):
+        super(SyncMessage, self).__init__(*a, **k)
 
 
     @classmethod
@@ -53,16 +58,17 @@ class SyncMessage(Message):
         delay = total_roundtrip - processing_time
         offset = ((t1 - t0) + (t2 - t3)) / 2.0
 
-        logger.info("DELAY: %f", delay)
-        logger.info("OFFSET: %f", offset)
+        logger.debug("DELAY: %f", delay)
+        logger.debug("OFFSET: %f", offset)
+        return offset, delay
 
 
 class SyncAck(Message):
 
     TYPE = "SYNC_ACK"
 
-    def __init__(self, sync):
-        super(SyncAck, self).__init__()
+    def __init__(self, sync, *a, **k):
+        super(SyncAck, self).__init__(*a, **k)
         self._sender_timestamp = sync["timestamp"]
         self._receiver_timestamp = sync["received"]
         self._sender_uid = sync["uid"]
@@ -83,13 +89,15 @@ class TimeSync(object):
 
     SYNC_INTERVAL = 2.0
 
-    def __init__(self):
-        self._last_active = time.time() - self.SYNC_INTERVAL
+    def __init__(self, clock=time.time):
+        self._last_active = clock() - self.SYNC_INTERVAL
         self._sync_messages = {}
+        self._clock = clock
+        self.offset, self.delay = None, None
 
 
     def _active(self):
-        now = time.time()
+        now = self._clock()
         if now - self._last_active >= self.SYNC_INTERVAL:
             self._last_active = now
             return True
@@ -98,14 +106,15 @@ class TimeSync(object):
 
     def activate(self, send):
         if self._active():
-            msg = SyncMessage()
+            msg = SyncMessage(clock=self._clock)
             self._sync_messages[msg.uid] = msg
             send(msg)
+
 
     def process(self, msg, send):
         type_ = msg["type"]
         if type_ == SyncMessage.TYPE:
-            send(SyncAck(msg))
+            send(SyncAck(msg, clock=self._clock))
         elif type_ == SyncAck.TYPE:
             self.sync_ack(msg)
 
@@ -116,4 +125,4 @@ class TimeSync(object):
         if sync_msg is None:
             logger.warn("Message already discarded for SYNC_ACK %r", msg)
             return
-        sync_msg.ack(msg)
+        self.offset, self.delay = sync_msg.ack(msg)
