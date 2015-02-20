@@ -15,6 +15,8 @@ setup(
         'console_scripts': [
             'pi-protocol-test = jetbot:pi_protocol_test',
             'protocol-test = jetbot:protocol_test',
+            'drive-test = jetbot:drive_test',
+            'jetbot-drive = jetbot:jetbot_driver',
         ],
     }
 )

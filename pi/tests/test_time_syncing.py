@@ -55,7 +55,7 @@ class TimeSyncingTests(unittest.TestCase):
         self.assertEqual(1002.0, ts.t2())
 
 
-    def test_offset_determined(self):
+    def test_offset_and_delay_determined(self):
         ts = FakeTimeSource(5.0) # the other is 5.0 seconds in the future
         here = TimeSync(clock=ts.t1)
         there = TimeSync(clock=ts.t2)

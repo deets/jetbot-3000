@@ -4,12 +4,13 @@ import argparse
 import logging
 import time
 import uuid
+from random import random
 import json
 from functools import partial
 import threading
 import Queue
-
-import zmq
+from itertools import cycle
+from abc import ABCMeta, abstractmethod
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +51,8 @@ class SyncMessage(Message):
         # http://en.wikipedia.org/wiki/Network_Time_Protocol#Clock_synchronization_algorithm
         t0 = ack_msg["sender_timestamp"]
         t1 = ack_msg["receiver_timestamp"]
-        t2 = ack_msg["timestamp"]
-        t3 = ack_msg["received"]
+        t2 = ack_msg[Message.TIMESTAMP]
+        t3 = ack_msg[Message.RECEIVED]
 
         total_roundtrip = t3 - t0
         processing_time = t2 - t1
@@ -69,8 +70,8 @@ class SyncAck(Message):
 
     def __init__(self, sync, *a, **k):
         super(SyncAck, self).__init__(*a, **k)
-        self._sender_timestamp = sync["timestamp"]
-        self._receiver_timestamp = sync["received"]
+        self._sender_timestamp = sync[Message.TIMESTAMP]
+        self._receiver_timestamp = sync[Message.RECEIVED]
         self._sender_uid = sync["uid"]
 
     def __json__(self):
@@ -85,12 +86,48 @@ class SyncAck(Message):
         return res
 
 
-class TimeSync(object):
+
+class Protocol(object):
+
+    __metaclass__ = ABCMeta
+
+
+    @abstractmethod
+    def activate(self, send):
+        pass
+
+
+    @abstractmethod
+    def process(self, msg, send):
+        pass
+
+
+
+class IntervalActivationMixin(object):
+
+    def __init__(self, activation_interval, clock=time.time):
+        self._activation_interval = activation_interval
+        self._last_active = clock() - self._activation_interval
+        self._clock = clock
+
+
+    def _active(self):
+        now = self._clock()
+        if now - self._last_active >= self._activation_interval:
+            self._last_active = now
+            return True
+        return False
+
+
+class TimeSync(Protocol, IntervalActivationMixin):
 
     SYNC_INTERVAL = 2.0
 
     def __init__(self, clock=time.time):
-        self._last_active = clock() - self.SYNC_INTERVAL
+        super(TimeSync, self).__init__(
+            activation_interval=self.SYNC_INTERVAL,
+            clock=clock,
+            )
         self._sync_messages = {}
         self._clock = clock
         self.offset, self.delay = None, None
@@ -126,3 +163,73 @@ class TimeSync(object):
             logger.warn("Message already discarded for SYNC_ACK %r", msg)
             return
         self.offset, self.delay = sync_msg.ack(msg)
+
+
+
+class Forward(Message):
+
+    TYPE = "forward"
+
+
+class DriveTest(Protocol, IntervalActivationMixin):
+
+    INTERVAL = 0.1
+
+
+    def __init__(self, commands, *a, **k):
+        super(DriveTest, self).__init__(
+            activation_interval=self.INTERVAL,
+            *a,
+            **k
+        )
+        self._commands = cycle(commands)
+
+
+    def activate(self, send):
+        if not self._active():
+            return
+        command = self._commands.next()
+        logger.info("Sending %s", command)
+        send(Forward(self._randomized_clock))
+
+
+    def _randomized_clock(self):
+        now = self._clock()
+        now -= random()
+        return now
+
+
+    def process(self, _msg, _send):
+        pass
+
+
+class DriveController(Protocol):
+
+    def __init__(self, timesync, threshold=0.5, *a, **k):
+        super(DriveController, self).__init__(
+            *a,
+            **k
+        )
+        self._timesync = timesync
+        self._threshold = threshold
+
+
+    def activate(self, send):
+        pass
+
+
+    def process(self, msg, _send):
+        if msg["type"] == "forward":
+            if self._message_valid(msg):
+                logger.info("Driving: %s", msg["type"])
+            else:
+                logger.warn("Discarding invalid message %r", msg)
+
+
+    def _message_valid(self, msg):
+        # align timestamp to our own clock
+        offset = self._timesync.offset
+        if offset is None:
+            logger.info("Not yet enough time-sync info")
+            return False
+        return self._threshold >= abs(msg[Message.RECEIVED] - (msg[Message.TIMESTAMP] - offset))
