@@ -17,6 +17,7 @@ setup(
             'protocol-test = jetbot:protocol_test',
             'drive-test = jetbot:drive_test',
             'jetbot-drive = jetbot:jetbot_driver',
+            'motor-test = jetbot:motor_test',
         ],
     }
 )

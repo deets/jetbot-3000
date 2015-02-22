@@ -7,4 +7,5 @@ from .host import (
 from .pi import (
     pi_protocol_test,
     jetbot_driver,
+    motor_test,
 )

@@ -205,13 +205,14 @@ class DriveTest(Protocol, IntervalActivationMixin):
 
 class DriveController(Protocol):
 
-    def __init__(self, timesync, threshold=0.5, *a, **k):
+    def __init__(self, timesync, motorcontrol, threshold=0.5, *a, **k):
         super(DriveController, self).__init__(
             *a,
             **k
         )
         self._timesync = timesync
         self._threshold = threshold
+        self._motorcontrol = motorcontrol
 
 
     def activate(self, send):
@@ -222,6 +223,7 @@ class DriveController(Protocol):
         if msg["type"] == "forward":
             if self._message_valid(msg):
                 logger.info("Driving: %s", msg["type"])
+                self._motorcontrol.control(msg["type"])
             else:
                 logger.warn("Discarding invalid message %r", msg)
 
