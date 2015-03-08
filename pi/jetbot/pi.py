@@ -7,7 +7,7 @@ from .base import (
     setup_logging,
     )
 
-from .protocol import TimeSync, DriveController
+from .protocol import TimeSync, DriveController, wait_loop
 from .motorcontrol import MotorControl
 
 
@@ -21,12 +21,10 @@ def pi_protocol_test():
 
     hub += TimeSync()
 
-    while True:
-        time.sleep(.1)
-        hub.process_once()
+    scheduler(hub)
 
 
-def jetbot_driver():
+def jetbot_driver(motor_control_class=MotorControl, scheduler=wait_loop):
     parser = argparse.ArgumentParser()
     PiHub.setup_argparser(parser)
     opts = parser.parse_args()
@@ -34,17 +32,14 @@ def jetbot_driver():
     setup_logging(opts)
     hub = PiHub.setup(opts)
 
-    mc = MotorControl()
+    mc = motor_control_class()
 
     timesync = TimeSync()
     hub += timesync
     hub += DriveController(timesync, mc)
 
     mc.start()
-
-    while True:
-        time.sleep(.1)
-        hub.process_once()
+    scheduler(hub)
 
 
 def motor_test():
@@ -56,3 +51,12 @@ def motor_test():
         time.sleep(2.0)
 
     mc.stop()
+
+
+def gui_simulator():
+    from .gui import GuiMotorControl
+    gmc = GuiMotorControl()
+    jetbot_driver(
+        motor_control_class=gmc,
+        scheduler=gmc.scheduler,
+        )

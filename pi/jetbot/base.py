@@ -32,7 +32,11 @@ class Hub(object):
             target=self._receive_message,
         )
         self._receiver_thread.setDaemon(True)
+
+
+    def start(self):
         self._receiver_thread.start()
+
 
     def __iadd__(self, processor):
         self._processors.append(processor)
@@ -50,7 +54,6 @@ class Hub(object):
             now = time.time()
             message = json.loads(packet)
             message["received"] = now
-            logger.debug(json.dumps(message))
             for processor in self._processors:
                 processor.process(
                     message,

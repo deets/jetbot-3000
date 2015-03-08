@@ -166,9 +166,14 @@ class TimeSync(Protocol, IntervalActivationMixin):
 
 
 
-class Forward(Message):
+class Drive(Message):
 
-    TYPE = "forward"
+
+
+    def __init__(self, command, *a, **k):
+        super(Drive, self).__init__(*a, **k)
+        self.TYPE = command
+
 
 
 class DriveTest(Protocol, IntervalActivationMixin):
@@ -190,7 +195,7 @@ class DriveTest(Protocol, IntervalActivationMixin):
             return
         command = self._commands.next()
         logger.info("Sending %s", command)
-        send(Forward(self._randomized_clock))
+        send(Drive(command, self._randomized_clock))
 
 
     def _randomized_clock(self):
@@ -220,12 +225,13 @@ class DriveController(Protocol):
 
 
     def process(self, msg, _send):
-        if msg["type"] == "forward":
+        if msg["type"] in  ("forward", "spin_left", "spin_right", "stop", "reverse"):
             if self._message_valid(msg):
                 logger.info("Driving: %s", msg["type"])
                 self._motorcontrol.control(msg["type"])
             else:
                 logger.warn("Discarding invalid message %r", msg)
+                self._motorcontrol.control("stop")
 
 
     def _message_valid(self, msg):
@@ -235,3 +241,10 @@ class DriveController(Protocol):
             logger.info("Not yet enough time-sync info")
             return False
         return self._threshold >= abs(msg[Message.RECEIVED] - (msg[Message.TIMESTAMP] - offset))
+
+
+def wait_loop(hub):
+    hub.start()
+    while True:
+        time.sleep(.1)
+        hub.process_once()

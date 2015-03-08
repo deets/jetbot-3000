@@ -13,11 +13,14 @@ setup(
     keywords = "python rasbpberry pi robot",
     entry_points = {
         'console_scripts': [
-            'pi-protocol-test = jetbot:pi_protocol_test',
-            'protocol-test = jetbot:protocol_test',
-            'drive-test = jetbot:drive_test',
-            'jetbot-drive = jetbot:jetbot_driver',
-            'motor-test = jetbot:motor_test',
+            # commands to be run on the pi
+            'pi-protocol-test = jetbot.pi:pi_protocol_test',
+            'pi-jetbot-drive = jetbot.pi:jetbot_driver',
+            'pi-gui-simulator = jetbot.pi:gui_simulator',
+            'pi-motor-test = jetbot.pi:motor_test',
+            # commands running on the server/host side
+            'protocol-test = jetbot.host:protocol_test',
+            'drive-test = jetbot.host:drive_test',
         ],
     }
 )

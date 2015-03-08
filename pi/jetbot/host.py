@@ -10,7 +10,9 @@ from .base import (
 from .protocol import (
     TimeSync,
     DriveTest,
+    wait_loop,
     )
+
 
 def protocol_test():
     parser = argparse.ArgumentParser()
@@ -19,10 +21,7 @@ def protocol_test():
     setup_logging(opts)
     hub = ServerHub.setup(opts)
     hub += TimeSync()
-
-    while True:
-        hub.process_once()
-
+    wait_loop(hub)
 
 
 def drive_test():
@@ -33,7 +32,5 @@ def drive_test():
     setup_logging(opts)
     hub = ServerHub.setup(opts)
     hub += TimeSync()
-    hub += DriveTest(["forward"])
-
-    while True:
-        hub.process_once()
+    hub += DriveTest(["spin_left", "forward", "spin_right", "reverse", "stop"])
+    wait_loop(hub)
