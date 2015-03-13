@@ -152,6 +152,7 @@ class MotorControl(object):
         self._b.ChangeDutyCycle(speed)
         self._p.ChangeFrequency(speed + 5)
         self._b.ChangeFrequency(speed + 5)
+        self._stopped = False
 
 
     def _turn_forward(self, left_speed=DEFAULT_SPEED, right_speed=DEFAULT_SPEED):
