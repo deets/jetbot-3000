@@ -11,6 +11,10 @@ setup(
     description = "The Raspberry PI-side of the Jet-Bot project.",
     license = "MIT",
     keywords = "python rasbpberry pi robot",
+    package_data = {
+        # If any package contains *.txt or *.rst files, include them:
+        'jetbot.server': ['views/*.tpl', 'static/*.*', 'static/js/*.*'],
+    },
     entry_points = {
         'console_scripts': [
             # commands to be run on the pi
