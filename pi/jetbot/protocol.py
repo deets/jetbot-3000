@@ -168,8 +168,6 @@ class TimeSync(Protocol, IntervalActivationMixin):
 
 class Drive(Message):
 
-
-
     def __init__(self, command, *a, **k):
         super(Drive, self).__init__(*a, **k)
         self.TYPE = command

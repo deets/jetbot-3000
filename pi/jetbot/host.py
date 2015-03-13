@@ -1,6 +1,6 @@
 #
-import time
 import argparse
+from .server import WebConnector
 
 from .base import (
     setup_logging,
@@ -33,4 +33,16 @@ def drive_test():
     hub = ServerHub.setup(opts)
     hub += TimeSync()
     hub += DriveTest(["spin_left", "forward", "spin_right", "reverse", "stop"])
+    wait_loop(hub)
+
+
+def server():
+    parser = argparse.ArgumentParser()
+    ServerHub.setup_argparser(parser)
+
+    opts = parser.parse_args()
+    setup_logging(opts)
+    hub = ServerHub.setup(opts)
+    hub += TimeSync()
+    hub += WebConnector()
     wait_loop(hub)

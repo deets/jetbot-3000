@@ -21,6 +21,7 @@ setup(
             # commands running on the server/host side
             'protocol-test = jetbot.host:protocol_test',
             'drive-test = jetbot.host:drive_test',
+            'server = jetbot.host:server',
         ],
     }
 )
