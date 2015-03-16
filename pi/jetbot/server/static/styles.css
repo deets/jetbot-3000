@@ -1,5 +1,23 @@
-img.crosshair {
+h1 {
 }
+
+div.header {
+    background: #2F4073;
+    text-align: center;
+    color: #7986AC!important;
+}
+
+
+body {
+    background: #5B773D;
+}
+
+
+div.bottomhalf {
+    background: white;
+    padding-top: 2em;
+}
+
 
 div.arrow-container {
     width: 7em;

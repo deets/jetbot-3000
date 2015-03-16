@@ -13,7 +13,13 @@ setup(
     keywords = "python rasbpberry pi robot",
     package_data = {
         # If any package contains *.txt or *.rst files, include them:
-        'jetbot.server': ['views/*.tpl', 'static/*.*', 'static/js/*.*'],
+        'jetbot.server': [
+            'views/*.tpl',
+            'static/*.*',
+            'static/js/*.*',
+            'static/css/*.*',
+            'static/fonts/*.*',
+        ],
     },
     entry_points = {
         'console_scripts': [

@@ -23,17 +23,16 @@
   </head>
   
   <body>
-    <div class="jumbotron">
+    <div class="jumbotron header">
       <div class="container">
 	<h1>JETBOT 3000</h1>
+	<p>An experiment in telepresence-robotics.</p>
       </div>
     </div>
 
-    <div class="container-fluid">
+    <div class="container-fluid bottomhalf">
       <div class="row">
 	<div class="col-md-4">
-	  <p>JETBOT 3000, an experiment in telepresence-robotics.</p>
-	  <p>(c) 2015 Diez B. Roggisch</p>
 	  <p>Use the arrow-keys to control movement. 
 	    <b>IMPORTANT:</b>Don't switch the focus away from the browser while pressing a key, otherwise the robot doesn't stop.</p>
 	</div>
