@@ -2,13 +2,13 @@ import sys
 from setuptools import setup, find_packages
 
 setup(
-    name = "JetBot-Pi",
+    name = "JetBot 3000",
     version = "1.0",
     packages = find_packages(),
     install_requires = [],
     author = "Diez B. Roggisch",
     author_email = "deets@web.de",
-    description = "The Raspberry PI-side of the Jet-Bot project.",
+    description = "The Jet-Bot project, an experiment in telepresence-robotics.",
     license = "MIT",
     keywords = "python rasbpberry pi robot",
     package_data = {
