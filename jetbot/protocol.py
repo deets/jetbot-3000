@@ -94,11 +94,22 @@ class Protocol(object):
 
     @abstractmethod
     def activate(self, send):
+        """
+        Called in an intervall
+        by the HUB to perform whatever
+        work necessary, and possibly send
+        messages.
+        """
         pass
 
 
     @abstractmethod
     def process(self, msg, send):
+        """
+        Invoked by the receiving background-thread
+        when a message comes in. It's possible to send
+        messages.
+        """
         pass
 
 
