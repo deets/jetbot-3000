@@ -11,6 +11,7 @@ from .protocol import (
     TimeSync,
     DriveTest,
     wait_loop,
+    StatusReporter,
     )
 
 
@@ -42,7 +43,9 @@ def server():
 
     opts = parser.parse_args()
     setup_logging(opts)
+    status_reporter = StatusReporter()
     hub = ServerHub.setup(opts)
     hub += TimeSync()
-    hub += WebConnector()
+    hub += status_reporter
+    hub += WebConnector(status_reporter=status_reporter)
     wait_loop(hub)

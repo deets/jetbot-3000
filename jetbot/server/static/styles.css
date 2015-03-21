@@ -43,3 +43,24 @@ div.arrow {
 div.arrow.active {
     background-color: yellow;
 }
+
+div#status {
+    height: 4em;
+}
+
+div#status.connected {
+    background-color: green
+}
+
+
+div#status.nowebconnector {
+    background-color: none
+}
+
+div#status.driving {
+    background-color: yellow
+}
+
+div#status.disconnected {
+    background-color: red
+}

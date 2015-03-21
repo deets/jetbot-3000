@@ -41,6 +41,17 @@ def track():
         if connector is not None:
             connector.put(command)
 
+
+@route('/status')
+def status():
+    connector = WebConnector.instance()
+    if connector is not None:
+        status = connector.status
+    else:
+        status = "nowebconnector"
+    return dict(status=status)
+
+
 class WebConnector(object):
 
     INSTANCE = None
@@ -51,12 +62,13 @@ class WebConnector(object):
         return cls.INSTANCE
 
 
-    def __init__(self):
+    def __init__(self, status_reporter=None):
         self._webthread = threading.Thread(target=self._run)
         self._webthread.setDaemon(True)
         self._commands = Queue.Queue()
         self._webthread.start()
         self.__class__.INSTANCE = self
+        self._status_reporter = status_reporter
 
 
     def put(self, command):
@@ -74,3 +86,10 @@ class WebConnector(object):
 
     def process(self, _message, _send):
         pass
+
+
+    @property
+    def status(self):
+        if self._status_reporter is not None:
+            return self._status_reporter.status
+        return "nostatusreporter"

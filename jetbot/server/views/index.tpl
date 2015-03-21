@@ -49,6 +49,8 @@
 	  </div>
 	</div>
 	<div class="col-md-4">
+	  Status
+	  <div class="well" id="status"/>
 	</div>
       </div>
     </div>

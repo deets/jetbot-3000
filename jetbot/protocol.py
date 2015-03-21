@@ -241,6 +241,30 @@ class DriveController(Protocol):
         return self._threshold >= abs(msg[Message.RECEIVED] - (msg[Message.TIMESTAMP] - offset))
 
 
+class StatusReporter(Protocol):
+
+    DISCONNECTION_TIMEOUT = 2.0
+
+    def __init__(self):
+        self._last_message_retrieved = time.time() - self.DISCONNECTION_TIMEOUT
+
+
+    @property
+    def status(self):
+        if time.time() - self._last_message_retrieved > \
+          self.DISCONNECTION_TIMEOUT:
+            return "disconnected"
+        return "connected"
+
+
+    def process(self, *args):
+        self._last_message_retrieved = time.time()
+
+
+    def activate(self, _send):
+        pass
+
+
 def wait_loop(hub):
     hub.start()
     while True:
