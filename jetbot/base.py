@@ -19,6 +19,7 @@ def setup_logging(_opts):
         level=logging.DEBUG,
         stream=sys.stderr,
     )
+    logging.getLogger("geventwebsocket.handler").setLevel(logging.ERROR)
 
 
 class Hub(object):
