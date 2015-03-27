@@ -101,4 +101,21 @@ function app() {
     });
     }
     statusPoll();
+
+    var ws = new WebSocket("ws://" + document.location.host + "/websocket");
+    ws.onmessage = function (evt) {
+	var sync = JSON.parse(evt.data);
+	console.log(sync);
+	var now = Date.now() / 1000.0;
+	var ack = {
+	    'sender_timestamp': sync.timestamp,
+	    'receiver_timestamp': now,
+	    'sender_uid': sync.uid,
+	    'type': 'SYNC_ACK',
+	    'uid': sync.uid + '-browser',
+	    'timestamp': now
+	};
+	console.log(ack);
+	ws.send(JSON.stringify(ack));
+    };
 }

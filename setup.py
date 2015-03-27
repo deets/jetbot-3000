@@ -5,7 +5,7 @@ setup(
     name = "JetBot 3000",
     version = "1.0",
     packages = find_packages(),
-    install_requires = [],
+    install_requires = ['gevent-websocket',],
     author = "Diez B. Roggisch",
     author_email = "deets@web.de",
     description = "The Jet-Bot project, an experiment in telepresence-robotics.",

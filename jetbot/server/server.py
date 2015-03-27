@@ -1,9 +1,26 @@
+#
 import os
 import threading
 import Queue
+import json
+import time
 
-from .bottle import route, run, template, static_file, request, TEMPLATE_PATH
-from ..protocol import Drive
+import gevent
+from gevent.pywsgi import WSGIServer
+from geventwebsocket import WebSocketError
+from geventwebsocket.handler import WebSocketHandler
+
+from .bottle import (
+    abort,
+    route,
+    template,
+    static_file,
+    request,
+    TEMPLATE_PATH,
+    app,
+    )
+
+from ..protocol import Drive, TimeSync
 
 TEMPLATE_PATH.insert(0, os.path.join(
     os.path.dirname(__file__),
@@ -52,6 +69,29 @@ def status():
     return dict(status=status)
 
 
+@route('/websocket')
+def websocket():
+    wsock = request.environ.get('wsgi.websocket')
+    if not wsock:
+        abort(400, 'Expected WebSocket request.')
+
+    timesync = TimeSync()
+
+    def send(message):
+        payload = message.__json__()
+        wsock.send(json.dumps(payload))
+
+    while True:
+        try:
+            timesync.activate(send)
+            message = json.loads(wsock.receive())
+            message["received"] = time.time()
+            timesync.process(message, send)
+            gevent.sleep(timesync.SYNC_INTERVAL)
+        except WebSocketError:
+            break
+
+
 class WebConnector(object):
 
     INSTANCE = None
@@ -75,8 +115,13 @@ class WebConnector(object):
         self._commands.put(command)
 
 
-    def _run(self):
-        run(host='', port=8080)
+    @classmethod
+    def _run(cls):
+        server = WSGIServer(
+            ("0.0.0.0", 8080),
+            application=app[0],
+            handler_class=WebSocketHandler)
+        server.serve_forever()
 
 
     def activate(self, send):
