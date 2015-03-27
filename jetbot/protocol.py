@@ -19,7 +19,7 @@ class Message(object):
 
     TYPE = None
 
-    TIMESTAMP = "timestamp" # When this message send
+    TIMESTAMP = "timestamp" # When this message was send
     RECEIVED = "received" # When this message was received at the sender
 
     def __init__(self, clock=time.time):
@@ -268,7 +268,7 @@ class StatusReporter(Protocol):
         return "connected"
 
 
-    def process(self, *args):
+    def process(self, _msg, _send):
         self._last_message_retrieved = time.time()
 
 
