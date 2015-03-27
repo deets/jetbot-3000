@@ -12,6 +12,8 @@ import Queue
 from itertools import cycle
 from abc import ABCMeta, abstractmethod
 
+from .base import message_valid
+
 logger = logging.getLogger(__name__)
 
 
@@ -249,7 +251,12 @@ class DriveController(Protocol):
         if offset is None:
             logger.info("Not yet enough time-sync info")
             return False
-        return self._threshold >= abs(msg[Message.RECEIVED] - (msg[Message.TIMESTAMP] - offset))
+        return message_valid(
+            self._threshold,
+            msg[Message.RECEIVED],
+            msg[Message.TIMESTAMP],
+            offset
+            )
 
 
 class StatusReporter(Protocol):

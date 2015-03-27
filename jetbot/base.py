@@ -110,3 +110,8 @@ class PiHub(Hub):
         logger.info("Connecting to '%s'", uri)
         socket.connect(uri)
         return cls(socket)
+
+
+def message_valid(threshold, received, remote_timestamp, remote_offset):
+    diff = received - (remote_timestamp - remote_offset)
+    return threshold >= abs(diff)
