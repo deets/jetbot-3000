@@ -4,6 +4,7 @@ import threading
 import Queue
 import json
 import time
+import logging
 
 import gevent
 from gevent.pywsgi import WSGIServer
@@ -22,6 +23,8 @@ from .bottle import (
 
 from ..protocol import Drive, TimeSync
 from ..base import message_valid
+
+logger = logging.getLogger(__name__)
 
 
 TEMPLATE_PATH.insert(0, os.path.join(
@@ -80,8 +83,11 @@ def status():
 @route('/websocket')
 def websocket():
     wsock = request.environ.get('wsgi.websocket')
+
     if not wsock:
         abort(400, 'Expected WebSocket request.')
+
+    logger.info("timesync connected")
 
     timesync = WebConnector.instance().timesync
 
@@ -92,12 +98,16 @@ def websocket():
     while True:
         try:
             timesync.activate(send)
-            message = json.loads(wsock.receive())
-            message["received"] = time.time()
-            timesync.process(message, send)
-            gevent.sleep(timesync.SYNC_INTERVAL)
+            input_message = wsock.receive()
+            if input_message is not None:
+                message = json.loads(input_message)
+                message["received"] = time.time()
+                timesync.process(message, send)
+            gevent.sleep(timesync.SYNC_INTERVAL / 10.0)
         except WebSocketError:
             break
+        except:
+            logger.exception("Exception during websocket handling")
 
 
 class WebConnector(object):

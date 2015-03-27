@@ -124,11 +124,19 @@ function app() {
 	    }
 	};
 
+	function ping() {
+	    if(ws !== null) {
+		setTimeout(ping, 500);
+		ws.send(JSON.stringify({'type': 'ping'}));
+	    }
+	};
+
 	function connect() {
 	    ws = new WebSocket("ws://" + document.location.host + "/websocket");
+	    console.log("connecting timesync: " + ws);
+
 	    ws.onmessage = function (evt) {
 		var sync = JSON.parse(evt.data);
-		console.log(sync);
 		var now = python_timestamp();
 		var ack = {
 		    'sender_timestamp': sync.timestamp,
@@ -138,13 +146,17 @@ function app() {
 		    'uid': sync.uid + '-browser',
 		    'timestamp': now
 		};
-		console.log(ack);
 		if(ws !== null && ws.readyState == WebSocket.OPEN) {
 		    ws.send(JSON.stringify(ack));
 		}
 	    };
 
+	    ws.onopen = function() {
+		ws.send(JSON.stringify({'type': 'socket-open'}));
+		ping();
+	    };
 	    ws.onclose = ws.onerror = errororclose;
+
 	};
 	connect();
     }());
