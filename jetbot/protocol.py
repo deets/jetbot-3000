@@ -143,7 +143,8 @@ class TimeSync(Protocol, IntervalActivationMixin):
             )
         self._sync_messages = {}
         self._clock = clock
-        self.offset, self.delay = None, None
+        self._offset, self._delay = None, None
+        self._updated = clock() - self.SYNC_INTERVAL * 2
 
 
     def _active(self):
@@ -175,8 +176,20 @@ class TimeSync(Protocol, IntervalActivationMixin):
         if sync_msg is None:
             logger.warn("Message already discarded for SYNC_ACK %r", msg)
             return
-        self.offset, self.delay = sync_msg.ack(msg)
+        self._offset, self._delay = sync_msg.ack(msg)
+        self._updated = self._clock()
 
+
+    @property
+    def offset(self):
+        if self._clock() <= self._updated + self.SYNC_INTERVAL * 2.0:
+            return self._offset
+
+
+    @property
+    def delay(self):
+        if self._clock() <= self._updated + self.SYNC_INTERVAL * 2.0:
+            return self._delay
 
 
 class Drive(Message):
