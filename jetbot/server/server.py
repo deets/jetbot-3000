@@ -161,6 +161,8 @@ class WebConnector(object):
                     remote_timestamp=command["timestamp"],
                     remote_offset=offset):
                 send(Drive(command["command"]))
+            else:
+                logger.debug("throwing away message %r with offset %f", command, offset)
 
 
     def process(self, _message, _send):
