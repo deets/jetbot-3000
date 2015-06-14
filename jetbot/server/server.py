@@ -21,6 +21,8 @@ from .bottle import (
     )
 
 from ..protocol import Drive, TimeSync
+from ..base import message_valid
+
 
 TEMPLATE_PATH.insert(0, os.path.join(
     os.path.dirname(__file__),
@@ -48,7 +50,8 @@ def send_static(filename):
 def track():
     data = request.json
     command = data.get("command")
-    if command is not None:
+    timestamp = data.get("timestamp")
+    if command is not None and timestamp is not None:
         command = dict(up="forward",
                  left="spin_left",
                  right="spin_right",
@@ -56,7 +59,12 @@ def track():
 
         connector = WebConnector.instance()
         if connector is not None:
-            connector.put(command)
+            connector.put(
+                dict(
+                    command=command,
+                    timestamp=timestamp,
+                )
+            )
 
 
 @route('/status')
@@ -75,7 +83,7 @@ def websocket():
     if not wsock:
         abort(400, 'Expected WebSocket request.')
 
-    timesync = TimeSync()
+    timesync = WebConnector.instance().timesync
 
     def send(message):
         payload = message.__json__()
@@ -102,17 +110,25 @@ class WebConnector(object):
         return cls.INSTANCE
 
 
-    def __init__(self, status_reporter=None):
+    def __init__(self, status_reporter=None, threshold=0.5):
+        self._threshold = threshold
         self._webthread = threading.Thread(target=self._run)
         self._webthread.setDaemon(True)
         self._commands = Queue.Queue()
         self._webthread.start()
         self.__class__.INSTANCE = self
         self._status_reporter = status_reporter
+        self.timesync = TimeSync()
 
 
     def put(self, command):
-        self._commands.put(command)
+        self._commands.put(
+            dict(
+                command=command["command"],
+                timestamp=command["timestamp"],
+                received=time.time(),
+                )
+            )
 
 
     @classmethod
@@ -125,8 +141,16 @@ class WebConnector(object):
 
 
     def activate(self, send):
+        offset = self.timesync.offset
         for _ in xrange(self._commands.qsize()):
-            send(Drive(self._commands.get()))
+            command = self._commands.get()
+
+            if offset is not None and message_valid(
+                    threshold=self._threshold,
+                    received=command["received"],
+                    remote_timestamp=command["timestamp"],
+                    remote_offset=offset):
+                send(Drive(command["command"]))
 
 
     def process(self, _message, _send):

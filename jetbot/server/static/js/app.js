@@ -95,14 +95,22 @@ function app() {
 
 
     function statusPoll(){
-    $.getJSON('/status', function(data) {
-	$("#status").text(data.status);
-	$("#status").removeClass();
-	$("#status").addClass(data.status);
-	$("#status").addClass("well");
-        setTimeout(statusPoll, 500);
-    });
-    }
+	$.ajax(
+	    "/status",
+	    {
+		"success": function(data) {
+		    $("#status").text(data.status);
+		    $("#status").removeClass();
+		    $("#status").addClass(data.status);
+		    $("#status").addClass("well");
+		    setTimeout(statusPoll, 500);
+		},
+		"error": function() {
+		    setTimeout(statusPoll, 500);
+		}
+	    }
+	)
+    };
     statusPoll();
 
     (function() {
