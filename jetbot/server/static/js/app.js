@@ -6,6 +6,9 @@ String.prototype.startsWith = function(prefix) {
     return this.indexOf(prefix) == 0;
 };
 
+function python_timestamp() {
+    return Date.now() / 1000.0;
+};
 
 function app() {
     function bindInputs() {
@@ -76,7 +79,7 @@ function app() {
     var tick   = Bacon.interval(100).map("tick");
     sm.log("statemachine: ");
     sm.onValue(function(event) {
-	var data = { "command" : event };
+	var data = { "command" : event, "timestamp" : python_timestamp() };
 	$.ajax({
 	    url: '/track',
 	    type: 'POST',
@@ -102,20 +105,39 @@ function app() {
     }
     statusPoll();
 
-    var ws = new WebSocket("ws://" + document.location.host + "/websocket");
-    ws.onmessage = function (evt) {
-	var sync = JSON.parse(evt.data);
-	console.log(sync);
-	var now = Date.now() / 1000.0;
-	var ack = {
-	    'sender_timestamp': sync.timestamp,
-	    'receiver_timestamp': now,
-	    'sender_uid': sync.uid,
-	    'type': 'SYNC_ACK',
-	    'uid': sync.uid + '-browser',
-	    'timestamp': now
+    (function() {
+	var ws = null;
+
+	function errororclose() {
+	    if (ws !== null) {
+		console.log("lost timesync connection, re-connecting");
+		ws = null;
+		setTimeout(connect, 500);
+	    }
 	};
-	console.log(ack);
-	ws.send(JSON.stringify(ack));
-    };
+
+	function connect() {
+	    ws = new WebSocket("ws://" + document.location.host + "/websocket");
+	    ws.onmessage = function (evt) {
+		var sync = JSON.parse(evt.data);
+		console.log(sync);
+		var now = python_timestamp();
+		var ack = {
+		    'sender_timestamp': sync.timestamp,
+		    'receiver_timestamp': now,
+		    'sender_uid': sync.uid,
+		    'type': 'SYNC_ACK',
+		    'uid': sync.uid + '-browser',
+		    'timestamp': now
+		};
+		console.log(ack);
+		if(ws !== null && ws.readyState == WebSocket.OPEN) {
+		    ws.send(JSON.stringify(ack));
+		}
+	    };
+
+	    ws.onclose = ws.onerror = errororclose;
+	};
+	connect();
+    }());
 }
