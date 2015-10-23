@@ -1,7 +1,7 @@
 #!/bin/bash
 rm -rf dist/* build/*
 python2.7 setup.py sdist
-scp dist/* pi@192.168.2.2:/tmp
+scp dist/* pi@$JETBOT_PI:/tmp
 
-ssh pi@192.168.2.2 "cd /tmp; /home/pi/.virtualenvs/jetbot/bin/pip install -U JetBot*"
+ssh pi@$JETBOT_PI "cd /tmp; $JETBOT_PI_PIP install -U JetBot*"
 
